@@ -1,66 +1,112 @@
 package com.example.template.domain.post.post.controller;
 
+import com.example.template.domain.post.post.entity.Post;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/posts")
 public class PostController {
 
+    private List<Post> posts = new ArrayList<>();
+    private long lastId = 3L;
+
+    public PostController() {
+        Post p1 = Post.builder()
+            .id(1L)
+            .title("title1")
+            .content("content1")
+            .build();
+
+        Post p2 = Post.builder()
+            .id(2L)
+            .title("title2")
+            .content("content2")
+            .build();
+
+        Post p3 = Post.builder()
+            .id(3L)
+            .title("title3")
+            .content("content3")
+            .build();
+
+        posts.add(p1);
+        posts.add(p2);
+        posts.add(p3);
+    }
+
     @GetMapping("/write")
-    @ResponseBody
-    public String showWrite() {
-        return getFormHtml("");
+    public String showWrite(@ModelAttribute("form") WriteForm form, BindingResult bindingResult) {
+        return "domain/post/post/write.html";
     }
 
     @AllArgsConstructor
     @Getter
     public static class WriteForm {
-        @NotBlank(message = "제목을 입력해주세요.")
-        @Length(min = 5, message = "제목은 5글자 이상 작성해주세요.")
+        @NotBlank(message = "01-제목을 입력해주세요.")
+        @Length(min = 5, message = "02-제목은 5글자 이상 작성해주세요.")
         private String title;
 
-        @NotBlank(message = "내용을 입력해주세요.")
-        @Length(min = 10, message = "내용은 10글자 이상 작성해주세요.")
+        @NotBlank(message = "03-내용을 입력해주세요.")
+        @Length(min = 10, message = "04-내용은 10글자 이상 작성해주세요.")
         private String content;
     }
 
     @PostMapping("/write")
-    @ResponseBody
-    public String doWrite(@Valid WriteForm form, BindingResult bindingResult) {
+    public String doWrite(@ModelAttribute("form") @Valid WriteForm form, BindingResult bindingResult,
+                          Model model) {
 
         if (bindingResult.hasErrors()) {
-            String errorMessage = bindingResult.getFieldErrors()
-                    .stream()
-                    .map(error -> error.getDefaultMessage())
-                    .collect(Collectors.joining("<br>"));
+//            String errorMessage = bindingResult.getFieldErrors()
+//                    .stream()
+//                    .map(error -> error.getDefaultMessage())
+//                    .sorted()
+//                    .map(msg -> msg.split("-")[1])
+//                    .collect(Collectors.joining("<br>"));
+//
+//            model.addAttribute("errorMessage", errorMessage);
 
-            return getFormHtml(errorMessage);
+            return "domain/post/post/write";
         }
 
-        return """
-                <h1>게시물 조회</h1>
-                <div>%s</div>
-                <div>%s</div>
-                """.formatted(form.title, form.content);
+        Post post = Post.builder()
+                .id(++lastId)
+                .title(form.getTitle())
+                .content(form.getContent())
+                .build();
+
+        posts.add(post);
+
+        return "redirect:/posts";
     }
 
-    private String getFormHtml(String errorMsg) {
+    @GetMapping
+    @ResponseBody
+    private String showList() {
+
+        String lis = posts.stream()
+                .map(post -> "<li>" + post.getTitle() + "</li>")
+                .collect(Collectors.joining("<br>"));
+
+        String ul = "<ul>" + lis + "</ul>";
+
         return """
-                <div>%s</div>
-                <form method="post">
-                    <input type="text" name="title" placeholder="제목" /> <br>
-                    <textarea name="content"></textarea> <br>
-                    <input type="submit" value="등록" /> <br>
-                </form>
-                """.formatted(errorMsg);
+                <div>글 목록</div>
+                
+                %s
+                
+                <a href="/posts/write">글쓰기</a>
+                """.formatted(ul);
     }
 }
