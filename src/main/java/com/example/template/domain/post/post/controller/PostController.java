@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/posts")
@@ -64,19 +63,9 @@ public class PostController {
     }
 
     @PostMapping("/write")
-    public String doWrite(@ModelAttribute("form") @Valid WriteForm form, BindingResult bindingResult,
-                          Model model) {
+    public String doWrite(@ModelAttribute("form") @Valid WriteForm form, BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
-//            String errorMessage = bindingResult.getFieldErrors()
-//                    .stream()
-//                    .map(error -> error.getDefaultMessage())
-//                    .sorted()
-//                    .map(msg -> msg.split("-")[1])
-//                    .collect(Collectors.joining("<br>"));
-//
-//            model.addAttribute("errorMessage", errorMessage);
-
             return "domain/post/post/write";
         }
 
@@ -93,15 +82,20 @@ public class PostController {
 
     @GetMapping
     private String showList(Model model) {
-
-        String lis = posts.stream()
-                .map(post -> "<li>" + post.getTitle() + "</li>")
-                .collect(Collectors.joining("<br>"));
-
-        String ul = "<ul>" + lis + "</ul>";
-
         model.addAttribute("posts", posts);
-
         return "domain/post/post/list.html";
+    }
+
+    @GetMapping("/detail/{id}")
+    private String detail(@PathVariable long id, Model model) {
+
+        Post post = posts.stream()
+                .filter(p -> p.getId() == id)
+                .findFirst()
+                .get();
+
+        model.addAttribute("post", post);
+
+        return "domain/post/post/detail";
     }
 }
