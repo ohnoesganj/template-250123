@@ -1,49 +1,26 @@
 package com.example.template.domain.post.post.controller;
 
 import com.example.template.domain.post.post.entity.Post;
+import com.example.template.domain.post.post.service.PostService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 @RequestMapping("/posts")
+@RequiredArgsConstructor
 public class PostController {
 
-    private List<Post> posts = new ArrayList<>();
-    private long lastId = 3L;
-
-    public PostController() {
-        Post p1 = Post.builder()
-            .id(1L)
-            .title("title1")
-            .content("content1")
-            .build();
-
-        Post p2 = Post.builder()
-            .id(2L)
-            .title("title2")
-            .content("content2")
-            .build();
-
-        Post p3 = Post.builder()
-            .id(3L)
-            .title("title3")
-            .content("content3")
-            .build();
-
-        posts.add(p1);
-        posts.add(p2);
-        posts.add(p3);
-    }
+    private final PostService postService;
 
     @GetMapping("/write")
     public String showWrite(@ModelAttribute("form") WriteForm form, BindingResult bindingResult) {
@@ -64,36 +41,25 @@ public class PostController {
 
     @PostMapping("/write")
     public String doWrite(@ModelAttribute("form") @Valid WriteForm form, BindingResult bindingResult) {
-
         if (bindingResult.hasErrors()) {
             return "domain/post/post/write";
         }
 
-        Post post = Post.builder()
-                .id(++lastId)
-                .title(form.getTitle())
-                .content(form.getContent())
-                .build();
-
-        posts.add(post);
-
+        postService.write(form.getTitle(), form.getContent());
         return "redirect:/posts";
     }
 
     @GetMapping
     private String showList(Model model) {
+        List<Post> posts = postService.getItems();
         model.addAttribute("posts", posts);
+
         return "domain/post/post/list.html";
     }
 
     @GetMapping("/detail/{id}")
     private String detail(@PathVariable long id, Model model) {
-
-        Post post = posts.stream()
-                .filter(p -> p.getId() == id)
-                .findFirst()
-                .get();
-
+        Post post = postService.getItem(id).get();
         model.addAttribute("post", post);
 
         return "domain/post/post/detail";
